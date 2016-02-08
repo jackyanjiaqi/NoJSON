@@ -40,7 +40,14 @@
 @single型值肯定为@pure型
 ##6. @it
 表示迭代。 @it<T>(item@T,id@num|str),collection)
-
+@it_double(_1,_2)
+@it_trible(_1,_2,_3)
+@it_some(@func(_1))
+@it_every(@func(_1))
+@it_someDouble(@func(_1,_2))
+@it_everyDouble(@func(_1,_2))
+@it_someTrible(@func(_1,_2,_3))
+@it_everyTrible(@func(_1,_2,_3))
 ##7. @list @set 
 __``?list=@obj@it(kv@prop[.key == @num])``__
 它定义了如下一个类型检查器
@@ -86,7 +93,7 @@ a_b_c表示a,b,c具有层级关系,
 __以双下滑线开头的表示系统临时创建的变量
 
 #四、内定义关键字
-##1.@
+##1.at符号@
 在原生语言中跟在变量后面起到说明和注解的作用
 比如``var me@psswrd = "1234567"``;
 如上是我的密码的意思。
@@ -98,13 +105,18 @@ __以双下滑线开头的表示系统临时创建的变量
 		"name":"JEY"
 		"girlfriend":
 	}
-##2.[]
+##2.中括号[]
 条件查询，跟在对象后面表示对此对象的一个查询匹配，内部可以使用复杂的表达式，只有为真时才会继续向右执行(隐含的表达式概念是从左向右执行的)
 
 	me@psswrd 实际上就是me[@reg="/\d{5,16}/"]
 	因为psswrd定义如下：
 	?psswrd=@reg="/\d{5,16}/"
-##3.ask
+##3.小括号()
+括号内优先运算，跟在型后面表示描述，
+跟在@func后面默认表示函数输入
+跟在]后面表示满足条件后执行的内容 //[](执行的内容)相当于if(){执行的内容}  []:()
+##4.冒号:
+##4.ask
 用户输入,从一个集合选择其中一个,由用户决定选择哪个,选择后立即执行回调
 ```
 ask(answer@callback_s,questions@set@noblank);
@@ -119,7 +131,7 @@ answer(reply,selectId@n){
 }
 ```
 
-##4.select 
+##5.select 
 用户输入,从一个集合中选择一个子集合,由用户决定选择哪些个,每选择一个则触发一次状态改变函数
 以javascript为例：
 ```
@@ -134,7 +146,7 @@ select(onSelect@callback_n,selected@list@noblank);
 onSelect(selectItems@list,selectId@num,state@bool){
 }
 ```
-##5.emit
+##6.emit
 emit(),向Nojson内部发出消息,由于存在多人交互和服务器和客户端间通信,有流程参加的例如使用了ask select 或者条件表达式[]以及选择条件表达式?[]:的表达式在结尾处添加结果。以便通知后续的活动。客户端未及时添加服务端默认为超时并继续轮训下一个动作。
 
 #五、一个服务端启动游戏的实例
@@ -264,12 +276,12 @@ init state: asker.drawFromRandomUser();
 
 prepare state:
 
-[(A.drawACardFrom(stack),B.drawACardFrom(stack),C.drawACardFrom(stack),D.drawACardFrom(stack)) until [stack.num <= 16]]
+[(A@drawACardFrom(stack),B@drawACardFrom(stack),C@drawACardFrom(stack),D@drawACardFrom(stack)) until [stack@num <= 16]]
 
 //debug打印抽牌后每个人的手牌
 
 debug:print A:
-playerA@regions_hand= [1171@heart3,1175@diamond3,1179@heart4,@1183@heartQ,
+playerA@regions_hand= [1171@heart3,1175@diamond3,1179@heart4,1183@heartQ,
 					1187@diamondK,1191@spadeK,1195@club2,1199@diamond2,1203@spade2}
 
 debug:print B:
@@ -295,3 +307,50 @@ debug:print @stack@card:
 	@card
 }
 ```
+自定义规则器:
+扑克牌和一般的卡牌的区别在于不执行单个牌的牌面描述，因为扑克牌本身没有描述，而且扑克牌很简单，只有花色和数字两个属性，因此每次打出的牌会有一个全局的规则，用于判断是否能够打出。我们命名为规则器。
+/**
+*以下是打出牌的规则:
+* 1.可以打出单张 
+* 2.可以打出两张一样的
+* 3.可以打出三张一样的，同时选择[非必须]最多两张牌作为附带的
+* 4.可以打出四张一样的
+* 5.可以打出至少三张数字连续的牌
+**/
+//定义cardNum为卡牌数量
+//定义cardMark为卡牌标记
+//内定义@arg换名
+//定义
+@define=@cardNum,@cardMark,@arg,@length
+//定义数字相等判断函数
+
+@打出的牌 = @arg;
+@数量 = @length;
+
+@数字相等 = @numberEquals = 
+[@arg(@it_everyDouble[@arg_1@n==@arg_2@n])(@ret=(@?cardMark=@arg_1@n,@?cardNum=@arg@length))]
+
+//说明(从左至右)：
+//step1接收返回值bool<-@arg->提供arg型结构作为this
+//@it_everyDouble型的输入是一个双输入返回bool的函数型用
+//[@arg_1@n==@arg_2@n]表示函数体,
+//@arg_1,@arg_2表示step1
+
+@数字连续 = @numberContinues = 
+[@arg(@it_everyDouble[@arg_1@n + 1 == @arg_2@n])(@ret=(@?cardMark=@arg_2@n,@?cardNum=@arg@length))]
+
+@基本规则 = @ruler_base = [?cardNum = @打出的牌@数字相等]
+
+function numberEquals(arg){
+	is
+}
+function ruler_base(arg){
+	this.arg = arg;
+	if(this.arg.number = 1){
+		//单张 返回一个
+		return {}
+	}
+}
+
+规则器的定义如下
+
