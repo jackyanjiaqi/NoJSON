@@ -330,19 +330,57 @@ debug:print @stack@card:
 @数字相等 = @numberEquals = 
 [@arg(@it_everyDouble[@arg_1@n==@arg_2@n])(@ret=(@?cardMark=@arg_1@n,@?cardNum=@arg@length))]
 
-//说明(从左至右)：
+//说明(从左至右)：step1:@arg step2:@it_everyDouble
 //step1接收返回值bool<-@arg->提供arg型结构作为this
 //@it_everyDouble型的输入是一个双输入返回bool的函数型用
 //[@arg_1@n==@arg_2@n]表示函数体,
 //@arg_1,@arg_2表示step1
 
 @数字连续 = @numberContinues = 
-[@arg(@it_everyDouble[@arg_1@n + 1 == @arg_2@n])(@ret=(@?cardMark=@arg_2@n,@?cardNum=@arg@length))]
+([@arg@it_everyDouble[@arg_1@n + 1 == @arg_2@n]])(@ret=(@?cardMark=@arg_2@n,@?cardNum=@arg@length))
 
 @基本规则 = @ruler_base = [?cardNum = @打出的牌@数字相等]
 
+```
+var Nojson = import("./Nojson");
+/**
+* 需要this
+* 总是返回bool型
+**/
+function it_everyDouble(ask_for_obj){
+	var arg = Nojson(ask_for_obj,"@construct@arg");
+	var self = this;
+	var ret = Nojson(self,"@construct_ret=false");
+	if(arg){
+		var last;
+		for(var p in arg)	{
+			var item = arg[p];
+			if(last){
+				//内建型@construct会把函数调用返回和参数转换成Nojson需要的格式
+				ret = Nojson(self,"@construct('@arg'&'@ret')")(_condition_1,last,item);
+			}
+			last = self[p];
+		}
+	}else{
+		throw new Error('it_everyDouble needs a input @obj');
+	}
+	
+	//gen by Nosjon
+	funtion _condition_1(arg){
+		var arg_1_n = Nojson(arg['_1'],"@n");
+		var arg_2_n = Nojson(arg['_2'],"@n");
+		if(arg_1_n == arg_2_n){
+			self.cardMark = arg_2_n;
+			self.cardNum = arg['length'];
+			return true;
+		}else{
+			return false;
+		}
+	}
+	return ret;
+}
 function numberEquals(arg){
-	is
+	
 }
 function ruler_base(arg){
 	this.arg = arg;
@@ -351,6 +389,7 @@ function ruler_base(arg){
 		return {}
 	}
 }
+```
 
 规则器的定义如下
 
