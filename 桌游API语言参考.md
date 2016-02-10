@@ -116,7 +116,7 @@ __以双下滑线开头的表示系统临时创建的变量
 跟在@func后面默认表示函数输入
 跟在]后面表示满足条件后执行的内容 //[](执行的内容)相当于if(){执行的内容}  []:()
 ##4.冒号:
-##4.ask
+##5.ask
 用户输入,从一个集合选择其中一个,由用户决定选择哪个,选择后立即执行回调
 ```
 ask(answer@callback_s,questions@set@noblank);
@@ -131,7 +131,7 @@ answer(reply,selectId@n){
 }
 ```
 
-##5.select 
+##6.select 
 用户输入,从一个集合中选择一个子集合,由用户决定选择哪些个,每选择一个则触发一次状态改变函数
 以javascript为例：
 ```
@@ -327,8 +327,11 @@ debug:print @stack@card:
 @打出的牌 = @arg;
 @数量 = @length;
 
+@是单张 = @isSingle = 
+[@arg@length == 1](@ret=(@?cardMark=@arg@n,@?cardNum=@arg@length))
+
 @数字相等 = @numberEquals = 
-[@arg(@it_everyDouble[@arg_1@n==@arg_2@n])(@ret=(@?cardMark=@arg_1@n,@?cardNum=@arg@length))]
+[@arg@obj@it_everyDouble[@arg_1@n==@arg_2@n]](@ret=(@?cardMark=@arg_1@n,@?cardNum=@arg@length))
 
 //说明(从左至右)：step1:@arg step2:@it_everyDouble
 //step1接收返回值bool<-@arg->提供arg型结构作为this
@@ -337,9 +340,19 @@ debug:print @stack@card:
 //@arg_1,@arg_2表示step1
 
 @数字连续 = @numberContinues = 
-([@arg@it_everyDouble[@arg_1@n + 1 == @arg_2@n]])(@ret=(@?cardMark=@arg_2@n,@?cardNum=@arg@length))
+[@arg@obj@it_everyDouble[@arg_1@n + 1 == @arg_2@n]](@ret=(@?cardMark=@arg_2@n,@?cardNum=@arg@length))
 
-@基本规则 = @ruler_base = [?cardNum = @打出的牌@数字相等]
+@存在三张数字相等 = @haveThreeEquals = 
+[@arg@it_someTrible[@arg@numberEquals]]
+
+@满足基本规则 = @ruler_base = 
+[@打出的牌(
+	@是单张(@ret=(@weight = @ret@cardMark,@starter = 100)) |
+	(@数字相等&@数量==2)(@ret=(@weight = @ret@cardMark,@starter = 100)) |
+	(@数字相等&@数量==4)(@ret=(@weight = 400*@ret@cardMark,@starter = 100)) |
+	(@存在三张数字相等&@数量<=5)(@ret=(@weight = @ret@cardMark,@starter = 100)) |
+	(@数量>=3 & @数字连续)(@ret=(@weight=@ret@cardMark,@offset = 100))
+]
 
 ```
 var Nojson = import("./Nojson");
@@ -347,17 +360,20 @@ var Nojson = import("./Nojson");
 * 需要this
 * 总是返回bool型
 **/
-function it_everyDouble(ask_for_obj){
-	var arg = Nojson(ask_for_obj,"@construct@arg");
-	var self = this;
-	var ret = Nojson(self,"@construct_ret=false");
-	if(arg){
+function it_everyDouble(arg,ret){
+	var arg_it_everyDouble = arg;
+	var ret_it_everyDouble = ret;
+	var res = false;
+	if(arg_it_everyDouble){
 		var last;
-		for(var p in arg)	{
-			var item = arg[p];
+		for(var p in arg_it_everyDouble)	{
+			var item = arg_it_everyDouble[p];
 			if(last){
 				//内建型@construct会把函数调用返回和参数转换成Nojson需要的格式
-				ret = Nojson(self,"@construct('@arg'&'@ret')")(_condition_1,last,item);
+				res = _condition_1({_1:last,_2:item},null);
+								res = Nojson(@ret,"@inject@ret&@construct@arg")
+				(_condition_1,last,item);
+				if()
 			}
 			last = self[p];
 		}
@@ -366,19 +382,22 @@ function it_everyDouble(ask_for_obj){
 	}
 	
 	//gen by Nosjon
-	funtion _condition_1(arg){
-		var arg_1_n = Nojson(arg['_1'],"@n");
-		var arg_2_n = Nojson(arg['_2'],"@n");
+	funtion _condition_1(arg,ret){
+		var arg__condition_1 = arg;
+		var arg_1_n = Nojson(arg__condition_1['_1'],"@n");
+		var arg_2_n = Nojson(arg__condition_1['_2'],"@n");
 		if(arg_1_n == arg_2_n){
-			self.cardMark = arg_2_n;
-			self.cardNum = arg['length'];
+			ret_it_everyDouble.cardMark = arg_2_n;
+			ret_it_everyDouble.cardNum = Nojson(arg_it_everyDouble,'@length');
 			return true;
 		}else{
 			return false;
 		}
 	}
-	return ret;
+	return res;
 }
+
+
 function numberEquals(arg){
 	
 }
