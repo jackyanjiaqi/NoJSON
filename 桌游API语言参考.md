@@ -1,13 +1,44 @@
-#一、内定义型
+#一、术语
+首先了解一下nojson文档中出现的术语。
+##1.1 主语
+一个nojson语句执行的默认结构型输入。最外层的主语类似于javascript中的global全局对象
 
-##1. @prop @value 和 @key 
+ * .表示在当前主语下操作，默认省略
+ * ..表示在上一级主语上操作
+
+##1.2 管道遍历
+nojson的每一个型都有可能改变很多内容，一次管道遍历包含从左至右的访问和从右至左的回溯
+###顺序输入、输出
+ * 从左至右访问时候的输入：从左边的上一级语句返回的@arg中获得的参数，在当前语句中由@arg访问
+ * 从左至右访问时候的输出：将结果写入到当前语句的@arg中，并传递给右边下一级的@arg
+ 
+###逆序输入、输出
+ * 从右至左回溯时候的输入：从右边的下一级语句返回的@ret中获得的参数，在当前语句中由@ret访问
+ * 从右至左回溯时候的输出：将结果写入到当前语句的@ret中，并传递给左边上一级的@ret
+ 
+##1.3 路由器
+一次管道遍历后能够使得主语发生变化的型
+##1.4 过滤器
+存在逆序输入输出的型
+
+##1.5 字面量
+由json结构支持的具有原始类型的非变量，运行时不会改变。
+其他语言中用const修饰的右值，枚举值，只可以引用不可以修改。
+nojson在字符串解析时即产生的型，是其他型以及语法树生成的基础。
+
+
+
+
+#二、内定义型
+
+##2.1 @prop @value 和 @key 
 
 @prop 表示一个键值对 .value取值 .key取键
 @value 和 @key 分别表示__取值__和__取键__，没有定义，对应于实现语言的原生功能 例如javascript原生方法``[]``或``.``；对应于java Map类型__push(key,value)__ 和 __get(key)__
 
 在Nojson中一个核心的概念就是通过模糊定义的型代替路由来进行查找，而非具体到某个语言的某个特性函数或操作，即便其具体实现很有可能就是一个底层函数，但是通过与特地语言解耦，使得Nojson更加关注业务，其script风格也更能够直接描述业务成为一份名副其实的业务说明文档，
 
-##2. @num @str @obj @bool
+##2.2 @num @str @obj @bool
 
 * @num 值为number类型 原生语言的类型判断功能 例如javascript typeof str == 'number';java 的 obj instanceof Integer || instanceof 
 Double || instanceof Float
@@ -15,13 +46,13 @@ Double || instanceof Float
 * @obj 值为object类型 原生语言的类型判断功能 除了@num @str的非null和undefined值;java 中非null的 Map
 * @bool 值为boolean类型
 
-##3. @reg (known as @str)
+##2.3 @reg (known as @str)
 值为@str型且满足正则表达式，只用作定义其他型 例：?color = @reg = “^#[A-Z]{3}” 定义一种新的型color 其值形为#RED #BLA
-##4. @arg @ret
-* @arg 是当前型的传入参数
-* @ret 是当前型的回传参数
-不同于型的
-##4. @single (known as @obj)
+##2.4 @arg @ret
+* @arg 负责当前语句管道遍历的顺序输入输出 引用@arg 写入@arg=
+* @ret 负责当前语句管道遍历的逆序输入输出 引用@ret 写入@ret=
+
+##2.5 @single (known as @obj)
 表示只有一个键值对的对象类型 
 例：
 
@@ -31,7 +62,7 @@ Double || instanceof Float
 	"color_test@single":{"red":"#RED"}		//是single型 因为对象只有一个键值对
 }
 ```
-##5. @pure (@single included)
+##2.6 @pure (@single included)
 @pure 表示所有值同属于一种类型
 例：
 
@@ -43,7 +74,7 @@ Double || instanceof Float
 }
 ```
 @single型值肯定为@pure型
-##6. @it
+##2.7 @it及其衍生型
 表示迭代。 @it<T>(item@T,id@num|str),collection)
 @it_double(_1,_2)
 @it_trible(_1,_2,_3)
@@ -53,7 +84,7 @@ Double || instanceof Float
 @it_everyDouble(@func(_1,_2))
 @it_someTrible(@func(_1,_2,_3))
 @it_everyTrible(@func(_1,_2,_3))
-##7. @list @set 
+##2.8 @list @set 
 __``?list=@obj@it(kv@prop[.key == @num])``__
 它定义了如下一个类型检查器
 
@@ -78,7 +109,7 @@ Nojson.testIsSetType(test_data){
 	return !Nojson.testIsListType(test_data);
 }
 ```
-##变量与id
+##9变量与id
 
 	除了由``@``开头和由``.``开头的以字母或下划线为首的单词为变量
 	定义一个变量用``var``关键字 这同其他语言相同
@@ -137,34 +168,38 @@ a_b_c表示a,b,c具有层级关系,
 ##2.点号.
 
 >在多个编程语言中表示属性访问和方法调用，在nojson也保留此定义，表示对点号后面的字面量进行属性访问或方法调用
+
 例如:
+
 ```
 //表示给当前主语赋值name属性="Jack"
 .name = "Jack"
 //调用当前主语的指定方法start
 .start()
-
-常与@符号连用表示
-.号作为路由器表示当前级，避免向下路由，默认省略
-..号表示向上一级
-...在中间表示省略
+```
+ *  `.`号作为路由器表示当前级，避免向下路由，默认省略
+ *  `..`号表示向上一级
+ * `...`在中间表示省略，在折叠表达式中表示折叠
 ##3.星号*
 常与其他关键字连用表示确数
-..*4表示向上4级
-.*4表示宽度为4
-@*4表示深度为4 
-以上两项常用于自定义结构型
+* `..*4`表示向上4级
+* `.*4`表示宽度为4 常用于自定义结构型和查询
+* `@*4`表示深度为4 常用于自定义结构型和查询
+
 ##4.中括号[]
 条件查询，跟在对象后面表示对此对象的一个查询匹配，内部可以使用复杂的表达式，只有为真时才会继续向右执行(隐含的表达式概念是从左向右执行的)
 
 	me@psswrd 实际上就是me[@reg="/\d{5,16}/"]
 	因为psswrd定义如下：
 	?psswrd=@reg="/\d{5,16}/"
+	
 ##5.小括号()
-小括号内为同一级,括号内用逗号隔开的语句使用同一主语
-括号内优先运算，跟在型后面表示描述，
-跟在@func后面默认表示函数输入
+* 小括号内为同一级,括号内用逗号隔开的语句使用同一主语
+* 括号内优先运算，跟在型后面表示描述(跟在@func型后面默认表示函数输入的实参表比如@print({name:"Jack"}))
+
 跟在]后面表示满足条件后执行的内容 //[](执行的内容)相当于if(){执行的内容}  []:()
+跟在等号=、星号*等元操作符后称作伴随描述，用于打破元操作，在期间添加执行内容从而影响结果。
+其功能类似于操作符重载，可见在nojson中的元操作符还有更加底层的操作符号。详见NoJSON高阶技巧.md
 ##6.冒号:
 表示分支
 [condition1:condition2:condition3:condition4]state1:state2:state3:state4:default_state
