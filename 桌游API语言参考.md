@@ -8,14 +8,19 @@
 在Nojson中一个核心的概念就是通过模糊定义的型代替路由来进行查找，而非具体到某个语言的某个特性函数或操作，即便其具体实现很有可能就是一个底层函数，但是通过与特地语言解耦，使得Nojson更加关注业务，其script风格也更能够直接描述业务成为一份名副其实的业务说明文档，
 
 ##2. @num @str @obj @bool
-@num 值为number类型 原生语言的类型判断功能 例如javascript typeof str == 'number';java 的 obj instanceof Integer || instanceof Double || instanceof Float
-@str 值为string类型 原生语言的类型判断功能 例如javascript typeof str == "string";java 的 obj instanceof String
-@obj 值为object类型 原生语言的类型判断功能 除了@num @str的非null和undefined值;java 中非null的 Map
-@bool 值为boolean类型
+
+* @num 值为number类型 原生语言的类型判断功能 例如javascript typeof str == 'number';java 的 obj instanceof Integer || instanceof 
+Double || instanceof Float
+* @str 值为string类型 原生语言的类型判断功能 例如javascript typeof str == "string";java 的 obj instanceof String
+* @obj 值为object类型 原生语言的类型判断功能 除了@num @str的非null和undefined值;java 中非null的 Map
+* @bool 值为boolean类型
 
 ##3. @reg (known as @str)
-@str型的值满足正则表达式，只用作定义其他型 例：?color = @reg = “^#[A-Z]{3}” 定义一种新的型color 其值形为#RED #BLA
-
+值为@str型且满足正则表达式，只用作定义其他型 例：?color = @reg = “^#[A-Z]{3}” 定义一种新的型color 其值形为#RED #BLA
+##4. @arg @ret
+* @arg 是当前型的传入参数
+* @ret 是当前型的回传参数
+不同于型的
 ##4. @single (known as @obj)
 表示只有一个键值对的对象类型 
 例：
@@ -101,6 +106,7 @@ a_b_c表示a,b,c具有层级关系,
 ```
 ?total = @n = 0
 @names@it(_1@arg,@arg@it(_2@arg,@total+= _2@*_1@weight + _2@offset)
+```
 
 @中文=@name 默认中文型名只做文本替代 必须有英文的型名作为字面量
 
@@ -114,12 +120,12 @@ a_b_c表示a,b,c具有层级关系,
 
 1.其中方向为顺序的作为查询器和路由器(往往同时作用),用于在当前结构型主语上查询并为后向型产生新的结构型主语。
 注：在一个类@a@b@c的结构中为了让后向型仅作为查询器而不作为路由器，常用@a_b_c约定写法来保留a的主语地位
-注：可以使用@@连用用来占位，表示级别向下，与后文提到的..级别向上相对应，同时@*n与..*n相对应
-需要
-结构型：
+注：可以@@连用用来占位，表示级别向下，与后文提到的..级别向上相对应，同时@*n与..*n相对应
+
+什么是结构型？
 	结构型分为内建型和自定义型
-	内建型详见(一)内建,
-	自定义型根据定义的查询规则，主要有Nojson支持的条件和查询、过滤等语法以及
+	内建型详见(一)内定义型。
+	自定义型根据定义的查询规则，主要有Nojson支持的条件和查询、过滤等语法以及与内建型复合使用的结构型。
 
 	Nojson("me@psswrd")表示从Nojson中查询具有psswrd型的变量赋值给me
 	Nojson("ask(answer@func,['开始游戏'])"),对传入的answer类型过滤，是一个函数而不是一个string或普通对象，若传入其他类型会报错。
@@ -127,7 +133,17 @@ a_b_c表示a,b,c具有层级关系,
 		"name":"JEY"
 		"girlfriend":
 	}
+	
 ##2.点号.
+
+>在多个编程语言中表示属性访问和方法调用，在nojson也保留此定义，表示对点号后面的字面量进行属性访问或方法调用
+例如:
+```
+//表示给当前主语赋值name属性="Jack"
+.name = "Jack"
+//调用当前主语的指定方法start
+.start()
+
 常与@符号连用表示
 .号作为路由器表示当前级，避免向下路由，默认省略
 ..号表示向上一级
@@ -135,8 +151,9 @@ a_b_c表示a,b,c具有层级关系,
 ##3.星号*
 常与其他关键字连用表示确数
 ..*4表示向上4级
-.*4小时向下4级
-@*4在路由中表示深度 常用于定义结构型
+.*4表示宽度为4
+@*4表示深度为4 
+以上两项常用于自定义结构型
 ##4.中括号[]
 条件查询，跟在对象后面表示对此对象的一个查询匹配，内部可以使用复杂的表达式，只有为真时才会继续向右执行(隐含的表达式概念是从左向右执行的)
 
